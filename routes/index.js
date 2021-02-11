@@ -257,24 +257,18 @@ router.get('/notas/:idSesion/:idUsuario', function (req, res, next) {
 });
 
 //GET CON LAS SESIONES COMPLETADAS 
-router.get('/completados/', function (req, res, next) {
+router.get('/completados/:idUsuario/:idSesion', function (req, res, next) {
 
-  let completados = [];
-  var i = 0;
-  db.collection("completados").get().then((querySnapshot) => {
-    querySnapshot.forEach((doc) => {
-      completados[i] =
-      {
-        sesion_completada : doc.data().sesion_completada,
-        usuario : doc.data().usuario
-      }
-      i++;
+  var idUsuario = req.params.idUsuario;
+  var idSesion = req.params.idSesion; 
 
-    })
-
-    res.json(completados);
-  }).catch(Error => { res.send(Error) });
+  db.collection("completados").where("sesion_completada" ,"==", idSesion ).where("usuario" , "==" , idUsuario).get().then((querySnapshot) => {
+    if (!querySnapshot.empty) {
+      res.send("Sesion completa")
+    } else {
+      res.send("Sesion incompleta")
+    } 
+  });
 
 });
-
 module.exports = router;
