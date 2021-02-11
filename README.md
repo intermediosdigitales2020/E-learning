@@ -1,5 +1,7 @@
 # E-learning
 
+DESPLIEGUE :  https://api-elearning.herokuapp.com/
+
 METODO POST /createUser  =>  Recibe un JSON con el cual registra a los usuarios en la base de datos  
 <br></br>
 {
