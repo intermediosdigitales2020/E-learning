@@ -2,6 +2,14 @@
 
 DESPLIEGUE :  https://api-elearning.herokuapp.com/
 
+METODO POST /login  =>  Este metodo recibe un JSON para verificar la exitencia de un usuario en el sistema y darle acceso
+{
+    "correo": "Coreo nuevo usuario"
+}
+
+Si el usuario existe retornara = id_usuario
+_______________________________________________________________________________________________________
+
 METODO POST /createUser  =>  Recibe un JSON con el cual registra a los usuarios en la base de datos  
 <br></br>
 {
@@ -21,6 +29,7 @@ METODO POST /addSesion  => Recibe un JSON con todos los datos necesarios para cr
     "descripcion": "",
     "fechacreacion": "",
     "fechalanzamiento": "",
+    "imagenminiatura": ""
 }
 
 Si la sesion se creo retornara = Sesion creada!
