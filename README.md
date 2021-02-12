@@ -3,6 +3,7 @@
 DESPLIEGUE :  https://api-elearning.herokuapp.com/
 
 METODO POST /login  =>  Este metodo recibe un JSON para verificar la exitencia de un usuario en el sistema y darle acceso
+<br></br>
 {
     "correo": "Coreo nuevo usuario"
 }
