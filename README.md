@@ -14,6 +14,7 @@ ________________________________________________________________________________
 METODO POST /createUser  =>  Recibe un JSON con el cual registra a los usuarios en la base de datos  
 <br></br>
 {
+    "nombre": " ",
     "correo": "Correo del usuario",
     "telefono": "numero de telefono del usuario"
 }
