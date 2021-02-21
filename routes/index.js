@@ -1,6 +1,9 @@
 var express = require('express');
 var router = express.Router();
 var bodyParser = require('body-parser');
+var app = express();
+var cors = require('cors')
+app.use(cors())
 
 /* GET home page. */
 router.get('/', function (req, res, next) {
@@ -24,7 +27,7 @@ router.post('/login', function (req, res, next) {
   if (datos['correo'] != "") {
     db.collection("Users").where("correo", "==", datos['correo']).get().then(querySnapshot => {
       if (querySnapshot.empty) {
-        res.send("Usuario no existe")
+        res.json("Usuario no existe")
       } else {
         querySnapshot.forEach(doc => {
           if (doc.exists) {
@@ -34,7 +37,7 @@ router.post('/login', function (req, res, next) {
       }
     })
   } else {
-    res.send("Error")
+    res.json("Error")
   }
 
 });
@@ -45,6 +48,7 @@ router.post('/createUser', function (req, res, next) {
 
   // Formato JSON de envio de datos para crear un usuario
   const datos = {
+    nombre: req.body.nombre,
     correo: req.body.correo,
     telefono: req.body.telefono
   };
@@ -52,22 +56,26 @@ router.post('/createUser', function (req, res, next) {
 
   db.collection("Users").where("correo", "==", datos['correo']).get().then(querySnapshot => {
     if (querySnapshot.empty) {
-      if (datos['correo'] != "" && datos['telefono'] != "") {
+      if (datos['correo'] && datos['telefono'] && datos['nombre']) {
 
         // creacion del usuario en la base de datos
         db.collection("Users").add({
+          nombre: datos['nombre'],
           correo: datos['correo'],
           telefono: datos['telefono'],
           completado: 0
-        }).then(() => {
-          res.send('Usuario creado correctamente!');
+        }).then((doc) => {
+          res.json({
+            mesanje: "Usuario creado correctamente",
+            id: doc.id
+          });
         })
 
       }
     } else {
       querySnapshot.forEach(doc => {
         if (doc.exists) {
-          res.send("Este usuario ya existe");
+          res.json("Este usuario ya existe");
         }
       })
     }
@@ -100,13 +108,16 @@ router.post('/addSesion', function (req, res, next) {
       fechacreacion: datos['fechacreacion'],
       fechalanzamiento: datos['fechalanzamiento'],
       imagenminiatura: datos['imagenminiatura']
-    }).then(() => {
-      res.send("Sesion creada!");
+    }).then((doc) => {
+      res.json({
+        mensaje: "Sesion creada",
+        id: doc.id
+      });
     }).catch(err => {
       res.send(err);
     })
   } else {
-    res.send("Error al crear la sesion");
+    res.json("Error al crear la sesion");
   }
 
 });
@@ -125,13 +136,16 @@ router.post('/create-comentario', function (req, res, next) {
       usuario: datos['id_usuario'],
       sesion: datos['id_sesion'],
       comentario: datos['comentario']
-    }).then(() => {
-      res.send("Comentario registrado!");
+    }).then((doc) => {
+      res.json({
+        mensaje: "Comentario creado",
+        id: doc.id
+      });
     }).catch(err => {
-      res.send(err);
+      res.json(err);
     })
   } else {
-    res.send("Error al resgistrar comentario");
+    res.json("Error al resgistrar comentario");
   }
 
 
@@ -152,13 +166,16 @@ router.post('/create-nota', function (req, res, next) {
       usuario: datos['id_usuario'],
       sesion: datos['id_sesion'],
       nota: datos['nota']
-    }).then(() => {
-      res.send("nota registrada!");
+    }).then((doc) => {
+      res.json({
+        mensaje: "Nota creada",
+        id: doc.id
+      });
     }).catch(err => {
-      res.send(err);
+      res.json(err);
     })
   } else {
-    res.send("Error al resgistrar nota");
+    res.json("Error al resgistrar nota");
   }
 });
 
@@ -181,18 +198,22 @@ router.post('/completado', function (req, res, next) {
         })
 
         // Agrega el progreso al usuario 
-        
-        var datosUser = db.collection("Users").doc(datos['id_usuario']).get().then(doc =>{
+
+        var datosUser = db.collection("Users").doc(datos['id_usuario']).get().then(doc => {
           db.collection("Users").doc(datos['id_usuario']).update({
             completado: parseInt(doc.data().completado) + 12.5
-          }).then(() => {
-            res.send("Completado!")
-          })  
+          }).then((doc2) => {
+            res.json({
+              mensaje: "Sesion completada",
+              id_usuario: doc.id,
+              id_sesion: datos['id_sesion']
+            })
+          })
         });
-        
+
       }
     } else {
-        res.send("Esta sesion ya esta completada!")
+      res.json("Esta sesion ya esta completada!")
     }
   })
 
@@ -208,10 +229,11 @@ router.get('/users', function (req, res, next) {
     querySnapshot.forEach((doc) => {
       datosUser[i] =
       {
-        id : doc.id,
+        id: doc.id,
+        nombre: doc.data().nombre,
         correo: doc.data().correo,
         telefono: doc.data().telefono,
-        completado : doc.data().completado
+        completado: doc.data().completado
 
       }
       i++;
@@ -248,20 +270,43 @@ router.get('/sesiones', function (req, res, next) {
 
 //GET CON LOS DATOS DEL ID DEL USUARIO
 router.get('/Users/:id', function (req, res, next) {
-  var busqueda = req.params.id;
+  let busqueda = req.params.id;
+  let datos = {};
+  let datos_notas = {notas : "No hay notas"};
+
   db.collection("Users").doc(busqueda).get().then(doc => {
     if (doc.exists) {
-      var datos ={
-        id : doc.id,
+      datos = {
+        id: doc.id,
+        nombre: doc.data().nombre,
         correo: doc.data().correo,
         telefono: doc.data().telefono,
-        completado : doc.data().completado
+        completado: doc.data().completado
 
       }
-      res.json(datos);
+      //res.json(datos);
     } else {
-      res.send("ID DE USUARIO NO EXISTE")
+      res.json("ID DE USUARIO NO EXISTE")
     }
+  }).then(() => {
+    db.collection("notas").where("usuario" , "==" , datos['id']).get().then(querySnapshot => {
+      querySnapshot.forEach(doc => {
+        datos_notas = {
+          nota : doc.data().nota,
+          sesion : doc.data().sesion,
+          id_usuario : doc.data().usuario
+        }
+      })
+    }).then(() =>{
+      res.json({
+        id : datos['id'],
+        nombre : datos['nombre'],
+        correo : datos['correo'],
+        telefono : datos['telefono'],
+        completado : datos['completado'],
+        notas : datos_notas
+      })
+    })
   })
 
 });
@@ -271,7 +316,7 @@ router.get('/sesiones/:id', function (req, res, next) {
   var busqueda = req.params.id;
   db.collection("sesiones").doc(busqueda).get().then(doc => {
     if (doc.exists) {
-      var datos =  {
+      var datos = {
         id: doc.id,
         video: doc.data().video,
         titulo: doc.data().titulo,
@@ -282,7 +327,7 @@ router.get('/sesiones/:id', function (req, res, next) {
       }
       res.json(datos);
     } else {
-      res.send("ID DE LA SESION NO EXISTE")
+      res.json("ID DE LA SESION NO EXISTE")
     }
   })
 
@@ -296,7 +341,7 @@ router.get('/comentarios/:id', function (req, res, next) {
   db.collection("comentarios").where("sesion", "==", busqueda).get().then(querySnapshot => {
     querySnapshot.forEach(doc => {
       datosSesion[i] = {
-        id_comentario : doc.id,
+        id_comentario: doc.id,
         usuario: doc.data().usuario,
         sesion: doc.data().sesion,
         comentario: doc.data().comentario
@@ -304,7 +349,7 @@ router.get('/comentarios/:id', function (req, res, next) {
       i++;
     })
     res.json(datosSesion);
-  }).catch(err => { res.send(err) })
+  }).catch(err => { res.json(err) })
 });
 
 //GET CON LAS NOTAS POR SESION Y USUARIO
@@ -317,7 +362,7 @@ router.get('/notas/:idSesion/:idUsuario', function (req, res, next) {
   db.collection("notas").where("sesion", "==", idSesion).where("usuario", "==", idUsuario).get().then(querySnapshot => {
     querySnapshot.forEach(doc => {
       datosSesion[i] = {
-        id_nota : doc.id,
+        id_nota: doc.id,
         usuario: doc.data().usuario,
         sesion: doc.data().sesion,
         nota: doc.data().nota
@@ -325,7 +370,7 @@ router.get('/notas/:idSesion/:idUsuario', function (req, res, next) {
       i++;
     })
     res.json(datosSesion);
-  }).catch(err => { res.send(err) })
+  }).catch(err => { res.json(err) })
 });
 
 //GET VERIFICANDO SI UN USUARIO YA COMPLETO UNA SESION 
@@ -336,9 +381,17 @@ router.get('/completados/:idUsuario/:idSesion', function (req, res, next) {
 
   db.collection("completados").where("sesion_completada", "==", idSesion).where("usuario", "==", idUsuario).get().then((querySnapshot) => {
     if (!querySnapshot.empty) {
-      res.send("Sesion completa")
+      res.json({
+        mensaje: "Sesion completa",
+        id_usuario: idUsuario,
+        id_sesion: idSesion
+      })
     } else {
-      res.send("Sesion incompleta")
+      res.json({
+        mensaje: "Sesion incompleta",
+        id_usuario: idUsuario,
+        id_sesion: idSesion
+      })
     }
   });
 
